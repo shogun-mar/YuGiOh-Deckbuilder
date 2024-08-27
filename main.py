@@ -5,21 +5,107 @@ from logic.state import State
 from logic.states.start_menu import handle_start_events, update_start, render_start
 from logic.states.deck_builder import handle_deck_builder_events, update_deck_builder, render_deck_builder
 
-def get_card_info_from_name(card_name):
-    url = f"https://db.ygoprodeck.com/api/v7/cardinfo.php?name={card_name}"
+def get_card_info(search_value, search_type='name'):
+    """
+    Fetch card information based on search type.
+    
+    Parameters:
+    - search_value: The value to search for (e.g., card name or card ID).
+    - search_type: The type of search ('name' or 'id'). Default is 'name'.
+    
+    Returns:
+    - JSON response containing card information if successful, None otherwise.
+    """
+
+    if search_type not in ['name', 'id']:
+        raise ValueError("Invalid search_type. Must be 'name' or 'id'.")
+
+    base_url = "https://db.ygoprodeck.com/api/v7/cardinfo.php"
+    url = f"{base_url}?{search_type}={search_value}"
+    
     response = requests.get(url)
     if response.status_code == 200:
         return response.json()
     else:
         return None
 
-def get_card_info_from_id(card_id):
-    url = f"https://db.ygoprodeck.com/api/v7/cardinfo.php?id={card_id}"
-    response = requests.get(url)
-    if response.status_code == 200:
-        return response.json()
+def cache_image(value, dimensions, image_type, card_id):
+    
+    if image_type not in ['pygame surface', 'response']:
+        raise ValueError("Invalid image_type. Must be 'pygame surface' or 'response'.")
+    if dimensions not in ['extra small', 'small', 'normal', 'cropped']:
+        raise ValueError("Invalid dimensions. Must be 'extra small', 'small', 'normal' or 'cropped'.")
+    
+    path = os.path.join("assets/cached cards", dimensions)
+
+    match image_type:
+        case 'pygame surface':
+            raise NotImplementedError("Caching pygame surfaces is not yet implemented. CANNOT FIGURE OUT HOW TO PASS CARD ID VALUE TO CORRECTLY NAME THE FILE")
+            #pg.image.save(value, os.path.join(path, f"{card_id}.jpg"))
+
+        case 'response':
+            image_path = os.path.join(path, f"{card_id}.jpg")
+            with open(image_path, 'wb') as file:
+                for chunk in value.iter_content(1024):
+                    file.write(chunk)
+
+def get_small_card_image(card_id):
+    """Download, cache and return the small image of a card from its ID"""
+
+    card_info = get_card_info(search_value=card_id, search_type='id') # Get card info json from ID
+    if card_info is not None:
+
+        card_image_url = card_info["data"][0]["card_images"][0]["image_url_small"] # Get the URL of the small image
+        response = requests.get(card_image_url, stream=True) # Get the image from the URL
+
+        # If the request was successful
+        if response.status_code == 200: 
+
+            # Cache the image
+            cache_image(response, 'small', 'response', card_id)
+
+            # Load the image from the cache
+            image_path = os.path.join("assets/cached cards/small", f"{card_id}.jpg")
+            card_image = pg.image.load(image_path) 
+            return card_image
+        
+        else:
+            print(f"Failed to download image: {response.status_code}")
+            return None
     else:
-        return None
+        raise ValueError(f"Failed to get card info from ID: {card_id}")
+
+def resize_card(surf, new_dim_preset, original_size):
+    """
+    Resizes input pygame surface to new dimensions based on preset and original size.
+
+    Parameters:
+    - surf: The pygame surface to resize.
+    - new_dim_preset: The new dimensions preset ('extra small', 'small', 'normal', 'cropped').
+    - original_size: The original size of the card image ('small', 'normal', 'cropped', 'extra small').
+
+    Returns:
+    - The resized pygame surface.
+    """
+
+    if new_dim_preset not in ['extra small', 'small', 'normal', 'cropped']:
+        raise ValueError("Invalid dim_preset. Must be 'extra small', 'small', 'normal' or 'cropped'.")
+    if original_size not in ['small', 'normal', 'cropped', 'extra small']:
+        raise ValueError("Invalid origin_size. Must be 'small', 'normal', 'cropped' or 'extra small'.")
+    
+    resize_factor = None
+
+    if original_size == 'small':
+        if new_dim_preset == 'extra small':
+            resize_factor = 0.5
+
+    if resize_factor is None:
+        raise NotImplementedError("Non yet implemented combination of original_size and new_dim_preset")
+
+    new_width = int(surf.get_width() * resize_factor)
+    new_height = int(surf.get_height() * resize_factor)
+    resized_surf = pg.transform.scale(surf, (new_width, new_height))
+    return resized_surf
 
 class App:
     def __init__(self):
@@ -78,9 +164,11 @@ class App:
 
                     if line.isdigit():  # If line only contains digits
                         try:
-                            self.current_cards_in_deck[current_portion].append(line)
-                            card_image = self.get_card_image(card_id=line)
-                            self.current_deck_sprites[current_portion].append(card_image)
+                            self.current_cards_in_deck[current_portion].append(line) # Add the card ID to the current portion
+                            card_image = get_small_card_image(card_id=line) # Get the small image of the card
+                            card_image = resize_card(card_image, new_dim_preset='extra small', original_size='small') # Resize the card image because the small images are still too large
+                            cache_image(card_image, dimensions='extra small', image_type='pygame surface', card_id=line) # Cache the resized image 
+                            self.current_deck_sprites[current_portion].append(card_image)  # Add the card image to the current portion
                         except Exception as e:
                             print(f"Error processing card ID {line}: {e}")
                             raise
@@ -98,26 +186,6 @@ class App:
         except Exception as e:
             print(f"An unexpected error occurred: {e}")
             raise
-
-    def get_card_image(self, card_id):
-        card_info = get_card_info_from_id(card_id)
-        if card_info is not None:
-            card_image_url = card_info["data"][0]["card_images"][0]["image_url"]
-            print(f"Downloading image from: {card_image_url}")
-            response = requests.get(card_image_url, stream=True)
-            if response.status_code == 200:
-                image_path = os.path.join("images", f"{card_id}.jpg")
-                os.makedirs(os.path.dirname(image_path), exist_ok=True)
-                with open(image_path, 'wb') as file:
-                    for chunk in response.iter_content(1024):
-                        file.write(chunk)
-                card_image = pg.image.load(image_path)
-                return card_image
-            else:
-                print(f"Failed to download image: {response.status_code}")
-                return None
-        else:
-            return None
 
     def run(self):
         while True:
