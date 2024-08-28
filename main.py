@@ -1,6 +1,7 @@
 import requests, time, os
 import pygame as pg
 from logic.state import State
+from settings import *
 
 from logic.states.start_menu import handle_start_events, update_start, render_start
 from logic.states.deck_builder import handle_deck_builder_events, update_deck_builder, render_deck_builder
@@ -88,34 +89,30 @@ def get_small_card_image(card_id):
     Returns:
     - The small image of the card as a pygame surface.
     """
-    if not is_image_already_cached(dimensions='small', card_id=card_id): # If the image is already cached
-        card_info = get_card_info(search_value=card_id, search_type='id') # Get card info json from ID
-        if card_info is not None:
+    card_info = get_card_info(search_value=card_id, search_type='id') # Get card info json from ID
+    if card_info is not None:
 
-            card_image_url = card_info["data"][0]["card_images"][0]["image_url_small"] # Get the URL of the small image
-            print(f"Downloading image from: {card_image_url}")
-            response = requests.get(card_image_url, stream=True) # Get the image from the URL
+        card_image_url = card_info["data"][0]["card_images"][0]["image_url_small"] # Get the URL of the small image
+        print(f"Downloading image from: {card_image_url}")
+        response = requests.get(card_image_url, stream=True) # Get the image from the URL
 
-            # If the request was successful
-            if response.status_code == 200: 
+        # If the request was successful
+        if response.status_code == 200: 
 
-                # Cache the image
-                cache_image(response, 'small', 'response', card_id)
+            # Cache the image
+            cache_image(response, 'small', 'response', card_id)
 
-                # Load the image from the cache
-                image_path = os.path.join("assets/cached cards/small", f"{card_id}.jpg")
-                card_image = pg.image.load(image_path).convert_alpha()
-                return card_image
+            # Load the image from the cache
+            image_path = os.path.join("assets/cached cards/small", f"{card_id}.jpg")
+            card_image = pg.image.load(image_path).convert_alpha()
+            return card_image
             
-            else:
-                print(f"Failed to download image: {response.status_code}")
-                return None
         else:
-            raise ValueError(f"Failed to get card info from ID: {card_id}")
-        
+            print(f"Failed to download image: {response.status_code}")
+            return None
     else:
-        return get_cached_image(dimensions='small', card_id=card_id)
-
+        raise ValueError(f"Failed to get card info from ID: {card_id}")
+        
 def resize_card(surf, new_dim_preset, original_size):
     """
     Resizes input pygame surface to new dimensions based on preset and original size.
@@ -151,13 +148,9 @@ def resize_card(surf, new_dim_preset, original_size):
 class App:
     def __init__(self):
 
-        #Settings
-        self.RES = (1800, 1000)
-        self.FLAGS = pg.RESIZABLE
-
         #Pygame initialization
         pg.init()
-        self.final_screen = pg.display.set_mode(self.RES, flags=self.FLAGS)
+        self.final_screen = pg.display.set_mode(RES, flags=FLAGS)
         pg.display.set_caption("Unofficial Yu-Gi-Oh! Deck Builder Tool")
         pg.display.set_icon(pg.image.load("assets/icon.png").convert_alpha())
         self.screen = self.final_screen.copy()
@@ -173,16 +166,16 @@ class App:
         self.start_menu_font = pg.font.Font("assets/fonts/Yu-Gi-Oh! Matrix Regular Small Caps 1.ttf", 75)
 
         self.start_new_button_sprite = self.start_menu_font.render("New deck", True, 'white')
-        self.start_new_button_rect = self.start_new_button_sprite.get_rect(center=(self.RES[0]//2, self.RES[1]//2 + 100))
+        self.start_new_button_rect = self.start_new_button_sprite.get_rect(center=(RES[0]//2, RES[1]//2 + 100))
 
         self.start_menu_import_sprite = self.start_menu_font.render("Import deck", True, 'white')
-        self.start_menu_import_rect = self.start_menu_import_sprite.get_rect(center=(self.RES[0]//2, self.RES[1]//2 + 200))
+        self.start_menu_import_rect = self.start_menu_import_sprite.get_rect(center=(RES[0]//2, RES[1]//2 + 200))
 
         self.start_menu_clear_cache_sprite = self.start_menu_font.render("Clear cache", True, 'white')
-        self.start_menu_clear_cache_rect = self.start_menu_clear_cache_sprite.get_rect(bottomright=(self.RES[0] - 10, self.RES[1] + 10))
+        self.start_menu_clear_cache_rect = self.start_menu_clear_cache_sprite.get_rect(bottomright=(RES[0] - 10, RES[1] + 10))
 
         self.start_menu_logo_sprite = pg.image.load("assets/logo.png").convert_alpha()
-        self.start_menu_logo_rect = self.start_menu_logo_sprite.get_rect(midtop = (self.RES[0]//2, self.RES[1]//6))
+        self.start_menu_logo_rect = self.start_menu_logo_sprite.get_rect(midtop = (RES[0]//2, RES[1]//6))
 
         #Deck Builder
         self.current_cards_in_deck = [[], [], []] #Main, Extra, Side
@@ -207,6 +200,7 @@ class App:
                     start_time = time.time()  # Record the start time of the iteration
 
                     line = line.strip()
+                    print(f"Processing line: {line}")
 
                     if line == "#main": 
                         current_portion = 0
@@ -221,7 +215,12 @@ class App:
                     if line.isdigit():  # If line only contains digits
                         try:
                             self.current_cards_in_deck[current_portion].append(line) # Add the card ID to the current portion
-                            card_image = get_small_card_image(card_id=line) # Get the small image of the card
+                            
+                            if is_image_already_cached(dimensions='small', card_id=line):
+                                card_image = get_cached_image(dimensions='small', card_id=line)
+                            else:
+                                card_image = get_small_card_image(card_id=line) # Get the small image of the card
+                                # The image is already cached in the get_small_card_image function
                             
                             if is_image_already_cached(dimensions='extra small', card_id=line):
                                 card_image = get_cached_image(dimensions='extra small', card_id=line)
