@@ -155,7 +155,7 @@ class App:
         self.screen = self.final_screen.copy()
         self.clock = pg.time.Clock()
 
-        self.state = State.START_MENU
+        self.state = State.DECK_EDITOR
 
         self.init_assets()
 
@@ -176,9 +176,18 @@ class App:
         self.start_menu_logo_sprite = pg.image.load("assets/logo.png").convert_alpha()
         self.start_menu_logo_rect = self.start_menu_logo_sprite.get_rect(midtop = (SCREEN_WIDTH//2, SCREEN_HEIGHT//6))
 
-        #Deck Builder
+        #Deck editor
         self.current_cards_in_deck = [[], [], []] #Main, Extra, Side
         self.current_deck_sprites = [[], [], []] #Main, Extra, Side
+
+        self.main_viewer_sprite = pg.image.load("assets/main_viewer.png").convert_alpha()
+        self.main_viewer_rect = self.main_viewer_sprite.get_rect(topleft=(350, 0))
+
+        self.side_viewer_sprite = pg.image.load("assets/side_viewer.png").convert_alpha()
+        self.side_viewer_rect = self.side_viewer_sprite.get_rect(topleft=(350 + 14, 724))
+
+        self.extra_viewer_sprite = pg.image.load("assets/extra_viewer.png").convert_alpha()
+        self.extra_viewer_rect = self.extra_viewer_sprite.get_rect(topleft=(350, 850))
 
     def read_deck_from_ydk(self, ydk_path):
         """
