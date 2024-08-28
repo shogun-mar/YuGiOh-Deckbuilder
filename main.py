@@ -40,8 +40,7 @@ def cache_image(value, dimensions, image_type, card_id):
 
     match image_type:
         case 'pygame surface':
-            raise NotImplementedError("Caching pygame surfaces is not yet implemented. CANNOT FIGURE OUT HOW TO PASS CARD ID VALUE TO CORRECTLY NAME THE FILE")
-            #pg.image.save(value, os.path.join(path, f"{card_id}.jpg"))
+            pg.image.save(value, os.path.join(path, f"{card_id}.jpg"))
 
         case 'response':
             image_path = os.path.join(path, f"{card_id}.jpg")
@@ -49,8 +48,46 @@ def cache_image(value, dimensions, image_type, card_id):
                 for chunk in value.iter_content(1024):
                     file.write(chunk)
 
+def is_image_already_cached(dimensions, card_id):
+    """
+    Check if the image of a card is already cached.
+
+    Parameters:
+    - dimensions: The dimensions of the image ('extra small', 'small', 'normal', 'cropped').
+    - card_id: The ID of the card.
+
+    Returns:
+    - True if the image is already cached, False otherwise.
+    """
+
+    path = os.path.join("assets/cached cards", dimensions, f"{card_id}.jpg")
+    return os.path.exists(path)
+
+def get_cached_image(dimensions, card_id):
+    """
+    Load and return the cached image of a card from its ID.
+
+    Parameters:
+    - dimensions: The dimensions of the image ('extra small', 'small', 'normal', 'cropped').
+    - card_id: The ID of the card.
+
+    Returns:
+    - The cached image as a pygame surface.
+    """
+
+    path = os.path.join("assets/cached cards", dimensions, f"{card_id}.jpg")
+    return pg.image.load(path).convert_alpha()
+
 def get_small_card_image(card_id):
-    """Download, cache and return the small image of a card from its ID"""
+    """
+    Download, cache and return the small image of a card from its ID.
+
+    Parameters:
+    - card_id: The ID of the card.
+
+    Returns:
+    - The small image of the card as a pygame surface.
+    """
 
     card_info = get_card_info(search_value=card_id, search_type='id') # Get card info json from ID
     if card_info is not None:
@@ -66,7 +103,7 @@ def get_small_card_image(card_id):
 
             # Load the image from the cache
             image_path = os.path.join("assets/cached cards/small", f"{card_id}.jpg")
-            card_image = pg.image.load(image_path) 
+            card_image = pg.image.load(image_path).convert_alpha()
             return card_image
         
         else:
@@ -111,14 +148,14 @@ class App:
     def __init__(self):
 
         #Settings
-        self.RES = (1600, 900)
+        self.RES = (1800, 1000)
         self.FLAGS = pg.RESIZABLE
 
         #Pygame initialization
         pg.init()
         self.final_screen = pg.display.set_mode(self.RES, flags=self.FLAGS)
-        pg.display.set_caption("Yu-Gi-Oh! Deck Builder Tool")
-        pg.display.set_icon(pg.image.load("assets/icon.png"))
+        pg.display.set_caption("Unofficial Yu-Gi-Oh! Deck Builder Tool")
+        pg.display.set_icon(pg.image.load("assets/icon.png").convert_alpha())
         self.screen = self.final_screen.copy()
         self.clock = pg.time.Clock()
 
@@ -132,16 +169,31 @@ class App:
         self.start_menu_font = pg.font.Font("assets/fonts/Yu-Gi-Oh! Matrix Regular Small Caps 1.ttf", 75)
 
         self.start_new_button_sprite = self.start_menu_font.render("New deck", True, 'white')
-        self.start_new_button_rect = self.start_new_button_sprite.get_rect(center=(self.RES[0]//2, self.RES[1]//2))
+        self.start_new_button_rect = self.start_new_button_sprite.get_rect(center=(self.RES[0]//2, self.RES[1]//2 + 100))
 
         self.start_menu_import_sprite = self.start_menu_font.render("Import deck", True, 'white')
-        self.start_menu_import_rect = self.start_menu_import_sprite.get_rect(center=(self.RES[0]//2, self.RES[1]//2 + 100))
+        self.start_menu_import_rect = self.start_menu_import_sprite.get_rect(center=(self.RES[0]//2, self.RES[1]//2 + 200))
+
+        self.start_menu_clear_cache_sprite = self.start_menu_font.render("Clear cache", True, 'white')
+        self.start_menu_clear_cache_rect = self.start_menu_clear_cache_sprite.get_rect(bottomright=(self.RES[0] - 10, self.RES[1] + 10))
+
+        self.start_menu_logo_sprite = pg.image.load("assets/logo.png").convert_alpha()
+        self.start_menu_logo_rect = self.start_menu_logo_sprite.get_rect(midtop = (self.RES[0]//2, self.RES[1]//6))
 
         #Deck Builder
         self.current_cards_in_deck = [[], [], []] #Main, Extra, Side
         self.current_deck_sprites = [[], [], []] #Main, Extra, Side
 
     def read_deck_from_ydk(self, ydk_path):
+        """
+        Read deck from ydk file and store card IDs in current_cards_in_deck list and the loaded images in current_deck_sprites.
+
+        Parameters:
+        - ydk_path: The path to the ydk file.
+
+        Returns:
+        - None
+        """
         current_portion = None
 
         try:
@@ -165,8 +217,15 @@ class App:
                     if line.isdigit():  # If line only contains digits
                         try:
                             self.current_cards_in_deck[current_portion].append(line) # Add the card ID to the current portion
-                            card_image = get_small_card_image(card_id=line) # Get the small image of the card
-                            card_image = resize_card(card_image, new_dim_preset='extra small', original_size='small') # Resize the card image because the small images are still too large
+                            if is_image_already_cached(dimensions='small', card_id=line): # If the image is already cached
+                                card_image = get_cached_image(dimensions='small', card_id=line) # Get the cached image
+                            else:
+                                card_image = get_small_card_image(card_id=line) # Get the small image of the card
+                            
+                            if is_image_already_cached(dimensions='extra small', card_id=line):
+                                card_image = get_cached_image(dimensions='extra small', card_id=line)
+                            else:
+                                card_image = resize_card(card_image, new_dim_preset='extra small', original_size='small') # Resize the card image because the small images are still too large
                             cache_image(card_image, dimensions='extra small', image_type='pygame surface', card_id=line) # Cache the resized image 
                             self.current_deck_sprites[current_portion].append(card_image)  # Add the card image to the current portion
                         except Exception as e:
@@ -186,6 +245,21 @@ class App:
         except Exception as e:
             print(f"An unexpected error occurred: {e}")
             raise
+
+    def clear_cache(self):
+        """
+        Clear the cache of card images.
+
+        Parameters:
+        - None
+
+        Returns:
+        - None
+        """
+
+        for root, dirs, files in os.walk("assets/cached cards"):
+            for file in files:
+                os.remove(os.path.join(root, file))
 
     def run(self):
         while True:

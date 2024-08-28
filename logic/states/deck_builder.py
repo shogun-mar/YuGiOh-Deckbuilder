@@ -8,7 +8,9 @@ def render_deck_builder(game):
     screen = game.screen
 
     screen.fill((0, 0, 0))
+    draw_deck(game)
 
+def draw_deck(game):
     for i, portion in enumerate(game.current_deck_sprites):
         for j, card_sprite in enumerate(portion):
-            screen.blit(card_sprite, (j * 50, i * 50))
+            game.screen.blit(card_sprite, (j * 50, i * 50))
