@@ -88,29 +88,33 @@ def get_small_card_image(card_id):
     Returns:
     - The small image of the card as a pygame surface.
     """
+    if not is_image_already_cached(dimensions='small', card_id=card_id): # If the image is already cached
+        card_info = get_card_info(search_value=card_id, search_type='id') # Get card info json from ID
+        if card_info is not None:
 
-    card_info = get_card_info(search_value=card_id, search_type='id') # Get card info json from ID
-    if card_info is not None:
+            card_image_url = card_info["data"][0]["card_images"][0]["image_url_small"] # Get the URL of the small image
+            print(f"Downloading image from: {card_image_url}")
+            response = requests.get(card_image_url, stream=True) # Get the image from the URL
 
-        card_image_url = card_info["data"][0]["card_images"][0]["image_url_small"] # Get the URL of the small image
-        response = requests.get(card_image_url, stream=True) # Get the image from the URL
+            # If the request was successful
+            if response.status_code == 200: 
 
-        # If the request was successful
-        if response.status_code == 200: 
+                # Cache the image
+                cache_image(response, 'small', 'response', card_id)
 
-            # Cache the image
-            cache_image(response, 'small', 'response', card_id)
-
-            # Load the image from the cache
-            image_path = os.path.join("assets/cached cards/small", f"{card_id}.jpg")
-            card_image = pg.image.load(image_path).convert_alpha()
-            return card_image
-        
+                # Load the image from the cache
+                image_path = os.path.join("assets/cached cards/small", f"{card_id}.jpg")
+                card_image = pg.image.load(image_path).convert_alpha()
+                return card_image
+            
+            else:
+                print(f"Failed to download image: {response.status_code}")
+                return None
         else:
-            print(f"Failed to download image: {response.status_code}")
-            return None
+            raise ValueError(f"Failed to get card info from ID: {card_id}")
+        
     else:
-        raise ValueError(f"Failed to get card info from ID: {card_id}")
+        return get_cached_image(dimensions='small', card_id=card_id)
 
 def resize_card(surf, new_dim_preset, original_size):
     """
@@ -159,7 +163,7 @@ class App:
         self.screen = self.final_screen.copy()
         self.clock = pg.time.Clock()
 
-        self.state = State.START_MENU
+        self.state = State.DECK_EDITOR
 
         self.init_assets()
 
@@ -217,16 +221,14 @@ class App:
                     if line.isdigit():  # If line only contains digits
                         try:
                             self.current_cards_in_deck[current_portion].append(line) # Add the card ID to the current portion
-                            if is_image_already_cached(dimensions='small', card_id=line): # If the image is already cached
-                                card_image = get_cached_image(dimensions='small', card_id=line) # Get the cached image
-                            else:
-                                card_image = get_small_card_image(card_id=line) # Get the small image of the card
+                            card_image = get_small_card_image(card_id=line) # Get the small image of the card
                             
                             if is_image_already_cached(dimensions='extra small', card_id=line):
                                 card_image = get_cached_image(dimensions='extra small', card_id=line)
                             else:
                                 card_image = resize_card(card_image, new_dim_preset='extra small', original_size='small') # Resize the card image because the small images are still too large
-                            cache_image(card_image, dimensions='extra small', image_type='pygame surface', card_id=line) # Cache the resized image 
+                                cache_image(card_image, dimensions='extra small', image_type='pygame surface', card_id=line) # Cache the resized image 
+                            
                             self.current_deck_sprites[current_portion].append(card_image)  # Add the card image to the current portion
                         except Exception as e:
                             print(f"Error processing card ID {line}: {e}")
