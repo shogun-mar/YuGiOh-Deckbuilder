@@ -33,8 +33,15 @@ def draw_deck(game):
     pg.draw.rect(game.screen, 'yellow', card_search_rect)
 
     # Draw the main deck
-    for i, card in enumerate(game.current_deck_sprites[0]): #dimensions of extra small card = (99, 144)
-        x = main_deck_view_rect.x + 5 + ((i % 10) * 99)
-        y = main_deck_view_rect.y + 5 + ((i // 10) * 144)
+    for i, card in enumerate(game.current_deck_sprites[0]): #dimensions of extra small card = (76, 116) 27% of the small card
+        x = main_deck_view_rect.x + 5 + ((i % 10) * 76)
+        y = main_deck_view_rect.y + 5 + ((i // 10) * 116)
+        game.screen.blit(card, (x, y))
+
+    # Draw the side deck
+    for i, card in enumerate(game.current_deck_sprites[2]): #dimensions of extra small card = (76, 116) 27% of the small card
+        x = side_deck_view_rect.x + 5 + (i  * 76)
+        y = side_deck_view_rect.y + 5
+        #y = side_deck_view_rect.y + 5 + ((i // 10) * 116)
         game.screen.blit(card, (x, y))
             
