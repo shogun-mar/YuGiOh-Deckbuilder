@@ -33,8 +33,8 @@ def draw_deck(game):
     pg.draw.rect(game.screen, 'yellow', card_search_rect)
 
     # Draw the main deck
-    for i, card in enumerate(game.current_deck_sprites[0]):
-        card.draw(game.screen, (main_deck_view_rect.x + 5, main_deck_view_rect.y + 5 + (i * 20)))
-
-
+    for i, card in enumerate(game.current_deck_sprites[0]): #dimensions of extra small card = (99, 144)
+        x = main_deck_view_rect.x + 5 + ((i % 10) * 99)
+        y = main_deck_view_rect.y + 5 + ((i // 10) * 144)
+        game.screen.blit(card, (x, y))
             

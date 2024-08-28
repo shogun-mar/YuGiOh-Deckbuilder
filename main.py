@@ -93,7 +93,6 @@ def get_small_card_image(card_id):
     if card_info is not None:
 
         card_image_url = card_info["data"][0]["card_images"][0]["image_url_small"] # Get the URL of the small image
-        print(f"Downloading image from: {card_image_url}")
         response = requests.get(card_image_url, stream=True) # Get the image from the URL
 
         # If the request was successful
@@ -135,7 +134,7 @@ def resize_card(surf, new_dim_preset, original_size):
 
     if original_size == 'small':
         if new_dim_preset == 'extra small':
-            resize_factor = 0.5
+            resize_factor = 0.37
 
     if resize_factor is None:
         raise NotImplementedError("Non yet implemented combination of original_size and new_dim_preset")
@@ -156,7 +155,7 @@ class App:
         self.screen = self.final_screen.copy()
         self.clock = pg.time.Clock()
 
-        self.state = State.DECK_EDITOR
+        self.state = State.START_MENU
 
         self.init_assets()
 
@@ -211,6 +210,7 @@ class App:
                     elif line == "!side": 
                         current_portion = 2
                         continue  # Skip to next iteration
+                    elif line == "": continue  # Skip to next iteration if line is empty
 
                     if line.isdigit():  # If line only contains digits
                         try:
