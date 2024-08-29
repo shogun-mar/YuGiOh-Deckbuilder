@@ -155,7 +155,7 @@ class App:
         self.screen = self.final_screen.copy()
         self.clock = pg.time.Clock()
 
-        self.state = State.DECK_EDITOR
+        self.state = State.START_MENU
 
         self.init_assets()
 
@@ -180,14 +180,20 @@ class App:
         self.current_cards_in_deck = [[], [], []] #Main, Extra, Side
         self.current_deck_sprites = [[], [], []] #Main, Extra, Side
 
+        self.card_search_sprite = pg.image.load("assets/card_search.png").convert_alpha()
+        self.card_search_rect = self.card_search_sprite.get_rect(topright=(SCREEN_WIDTH, 5))
+
         self.main_viewer_sprite = pg.image.load("assets/main_viewer.png").convert_alpha()
-        self.main_viewer_rect = self.main_viewer_sprite.get_rect(topleft=(350, 0))
+        main_topright = (self.card_search_rect.topleft[0] - 5, self.card_search_rect.topleft[1] + 5)
+        self.main_viewer_rect = self.main_viewer_sprite.get_rect(topright=main_topright)
 
         self.side_viewer_sprite = pg.image.load("assets/side_viewer.png").convert_alpha()
-        self.side_viewer_rect = self.side_viewer_sprite.get_rect(topleft=(350 + 14, 724))
+        side_topright = (self.card_search_rect.topleft[0] - 5, 725 + 15)
+        self.side_viewer_rect = self.side_viewer_sprite.get_rect(topright=side_topright)
 
         self.extra_viewer_sprite = pg.image.load("assets/extra_viewer.png").convert_alpha()
-        self.extra_viewer_rect = self.extra_viewer_sprite.get_rect(topleft=(350, 850))
+        extra_bottomright = (self.card_search_rect.bottomleft[0] - 5, self.card_search_rect.bottomleft[1] + 5)
+        self.extra_viewer_rect = self.extra_viewer_sprite.get_rect(bottomright=extra_bottomright)
 
     def read_deck_from_ydk(self, ydk_path):
         """
