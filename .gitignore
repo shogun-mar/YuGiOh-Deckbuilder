@@ -1,0 +1,6 @@
+# Ignore the cached cards folder
+assets/cached_cards/
+# Ignore the pycache folders
+__pycache__
+logic/__pycache__
+logic/states/__pycache__

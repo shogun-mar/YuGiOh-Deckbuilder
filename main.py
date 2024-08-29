@@ -112,14 +112,13 @@ def get_small_card_image(card_id):
     else:
         raise ValueError(f"Failed to get card info from ID: {card_id}")
         
-def resize_card(surf, new_dim_preset, original_size):
+def resize_card(surf, new_dim_preset):
     """
     Resizes input pygame surface to new dimensions based on preset and original size.
 
     Parameters:
     - surf: The pygame surface to resize.
     - new_dim_preset: The new dimensions preset ('cropped', 'small', 'normal', 'viewer normal', 'viewer small').
-    - original_size: The original size of the card image ('cropped', 'small', 'normal', 'viewer normal', 'viewer small').
 
     Returns:
     - The resized pygame surface.
@@ -127,21 +126,12 @@ def resize_card(surf, new_dim_preset, original_size):
 
     if new_dim_preset not in ['cropped', 'small', 'normal', 'viewer normal', 'viewer small']:
         raise ValueError("Invalid dim_preset. Must be 'cropped', 'small', 'normal', 'viewer normal' or 'viewer small'.")
-    if original_size not in ['cropped', 'small', 'normal', 'viewer normal', 'viewer small']:
-        raise ValueError("Invalid origin_size. Must be 'cropped', 'small', 'normal', 'viewer normal' or 'viewer small'].")
-    
-    resize_factor = None
 
-    if original_size == 'small':
-        if new_dim_preset == 'viewer normal':
-            resize_factor = 0.30
+    if new_dim_preset == 'viewer normal':
+        new_width = 83
+        new_height = 118
 
-    if resize_factor is None:
-        raise NotImplementedError("Non yet implemented combination of original_size and new_dim_preset")
-
-    new_width = int(surf.get_width() * resize_factor)
-    new_height = int(surf.get_height() * resize_factor)
-    resized_surf = pg.transform.scale(surf, (new_width, new_height))
+    resized_surf = pg.transform.smoothscale(surf, (new_width, new_height))
     return resized_surf
 
 class App:
@@ -243,7 +233,7 @@ class App:
                             if is_image_already_cached(dimensions='viewer normal', card_id=line):
                                 card_image = get_cached_image(dimensions='viewer normal', card_id=line)
                             else:
-                                card_image = resize_card(card_image, new_dim_preset='viewer normal', original_size='small') # Resize the card image because the small images are still too large
+                                card_image = resize_card(card_image, new_dim_preset='viewer normal') # Resize the card image because the small images are still too large
                                 cache_image(card_image, dimensions='viewer normal', image_type='pygame surface', card_id=line) # Cache the resized image 
                             
                             self.current_deck_sprites[current_portion].append(card_image)  # Add the card image to the current portion

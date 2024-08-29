@@ -31,10 +31,11 @@ def draw_deck(game):
 
     # Draw the main deck
     main_deck_origin_x, main_deck_origin_y = game.main_viewer_rect.topleft[0] + 59, game.main_viewer_rect.topleft[1] + 2
+    x, y = main_deck_origin_x, main_deck_origin_y
 
-    for i, card in enumerate(game.current_deck_sprites[0]): #dimensions of extra small card = (76, 116) 27% of the small card
-        x = main_deck_origin_x + ((i % 10) * 76) + 5 * (i%10)
-        y = main_deck_origin_y + ((i // 10) * 116) + 5 * (i // 10)
+    for i, card in enumerate(game.current_deck_sprites[0]):  # dimensions of viewer normal card = (83, 118)
+        x = main_deck_origin_x + (i % 10) * (83 + 3)
+        y = main_deck_origin_y + (i // 10) * (118 + 2)
 
         game.screen.blit(card, (x, y))
 
@@ -42,8 +43,8 @@ def draw_deck(game):
     # Draw the side deck
     side_deck_origin_x, side_deck_origin_y = game.side_viewer_rect.topleft[0] + 43, game.side_viewer_rect.topleft[1] + 21
 
-    for i, card in enumerate(game.current_deck_sprites[2]): #dimensions of extra small card = (76, 116) 27% of the small card
-        x = side_deck_origin_x + 5 + (i  * 76)
+    for i, card in enumerate(game.current_deck_sprites[2]): #dimensions of extra small card = (80, 117)
+        x = side_deck_origin_x + 3 + (i  * 80)
         y = side_deck_origin_y
+
         game.screen.blit(card, (x, y))
-            
