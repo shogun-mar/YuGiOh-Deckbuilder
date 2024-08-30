@@ -131,7 +131,7 @@ def resize_card(surf, new_dim_preset):
         new_width = 83
         new_height = 118
     elif new_dim_preset == 'viewer small':
-        new_width = 54
+        new_width = 55
         new_height = 78
 
     resized_surf = pg.transform.smoothscale(surf, (new_width, new_height))
@@ -170,8 +170,6 @@ class App:
         self.start_menu_logo_rect = self.start_menu_logo_sprite.get_rect(midtop = (SCREEN_WIDTH//2, SCREEN_HEIGHT//6))
 
         #Deck editor
-        self.current_cards_in_deck = [[], [], []] #Main, Extra, Side
-        self.current_deck_sprites = [[], [], []] #Main, Extra, Side
 
         self.card_search_sprite = pg.image.load("assets/card_search.png").convert_alpha()
         self.card_search_rect = self.card_search_sprite.get_rect(topright=(SCREEN_WIDTH, 5))
@@ -187,6 +185,10 @@ class App:
         self.extra_viewer_sprite = pg.image.load("assets/extra_viewer.png").convert_alpha()
         extra_bottomright = (self.card_search_rect.bottomleft[0] - 5, self.card_search_rect.bottomleft[1] + 5)
         self.extra_viewer_rect = self.extra_viewer_sprite.get_rect(bottomright=extra_bottomright)
+
+        self.current_cards_in_deck = [[], [], []] #Main, Extra, Side
+        self.current_deck_sprites = [[], [], []] #Main, Extra, Side
+        self.current_deck_rects = self.gen_deck_rects()
 
     def read_deck_from_ydk(self, ydk_path):
         """
@@ -280,6 +282,45 @@ class App:
         for root, dirs, files in os.walk("assets/cached cards"):
             for file in files:
                 os.remove(os.path.join(root, file))
+
+    def gen_deck_rects(self):
+        """
+        Generate the rects for the main, extra and side deck.
+
+        Parameters:
+        - None
+
+        Returns:
+        - A list of rects for the main, extra and side deck.
+        """
+
+        rects = [[], [], []]
+
+        #Main deck
+        x, y = self.main_viewer_rect.topleft[0] + 58, self.main_viewer_rect.topleft[1] + 2
+        card_dims = (83, 118)
+        for i in range(60):
+            rects[0].append(pg.Rect((x, y), card_dims))
+            x += 83 + 2 # 83 is the width of the card, 2 is the horizontal padding
+            if i % 10 == 9:
+                x = self.main_viewer_rect.topleft[0] + 58
+                y += 118 + 2 # 118 is the height of the card, 3 is the vertical padding
+            
+        
+        #Side deck
+        x, y = self.side_viewer_rect.topleft[0] + 44, self.side_viewer_rect.topleft[1] + 22
+        card_dims = (55, 78)
+        for i in range(15):
+            rects[2].append(pg.Rect((x, y), card_dims))
+            x += 55 + 2 # 54 is the width of the card, 2 is the horizontal padding
+
+        #Extra deck
+        x, y = self.extra_viewer_rect.topleft[0] + 44, self.extra_viewer_rect.topleft[1] + 22
+        for i in range(15):
+            rects[1].append(pg.Rect((x, y), card_dims))
+            x += 55 + 2 # 54 is the width of the card, 2 is the horizontal padding
+
+        return rects
 
     def run(self):
         while True:
