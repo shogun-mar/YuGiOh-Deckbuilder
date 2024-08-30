@@ -30,21 +30,23 @@ def draw_deck(game):
     game.screen.blit(game.card_search_sprite, game.card_search_rect)
 
     # Draw the main deck
-    main_deck_origin_x, main_deck_origin_y = game.main_viewer_rect.topleft[0] + 59, game.main_viewer_rect.topleft[1] + 2
-    x, y = main_deck_origin_x, main_deck_origin_y
+    x, y = game.main_viewer_rect.topleft[0] + 58, game.main_viewer_rect.topleft[1] + 2
 
-    for i, card in enumerate(game.current_deck_sprites[0]):  # dimensions of viewer normal card = (83, 118)
-        x = main_deck_origin_x + (i % 10) * (83 + 3)
-        y = main_deck_origin_y + (i // 10) * (118 + 2)
+    for i, card in enumerate(game.current_deck_sprites[0]):  # dimensions of viewer normal card = (82, 117)
 
         game.screen.blit(card, (x, y))
 
+        x += 83 + 2 # 83 is the width of the card, 2 is the horizontal padding
+        if i % 10 == 9:
+            x = game.main_viewer_rect.topleft[0] + 58
+            y += 118 + 2 # 118 is the height of the card, 3 is the vertical padding
 
     # Draw the side deck
-    side_deck_origin_x, side_deck_origin_y = game.side_viewer_rect.topleft[0] + 43, game.side_viewer_rect.topleft[1] + 21
+    x, y = game.side_viewer_rect.topleft[0] + 44, game.side_viewer_rect.topleft[1] + 22
 
-    for i, card in enumerate(game.current_deck_sprites[2]): #dimensions of extra small card = (80, 117)
-        x = side_deck_origin_x + 3 + (i  * 80)
-        y = side_deck_origin_y
-
+    for i, card in enumerate(game.current_deck_sprites[2]): #dimensions of extra small card = (54, 78)
         game.screen.blit(card, (x, y))
+        
+        x += 54 + 2 # 54 is the width of the card, 2 is the horizontal padding
+
+        
