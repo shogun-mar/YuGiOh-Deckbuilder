@@ -9,11 +9,12 @@ def handle_start_events(game, event):
         elif game.start_menu_import_rect.collidepoint(event.pos):
             selected_ydk_path = filedialog.askopenfilename(title="Select a .ydk file", filetypes=[("YDK files", "*.ydk")])
             game.read_deck_from_ydk(selected_ydk_path)
+            game.bind_rects_to_cards()
             game.state = State.DECK_EDITOR
         elif game.start_menu_clear_cache_rect.collidepoint(event.pos):
             game.clear_cache()
 
-def update_start():
+def update_start(game):
     pass
 
 def render_start(game):

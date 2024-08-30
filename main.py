@@ -1,6 +1,7 @@
 import requests, time, os
 import pygame as pg
 from logic.state import State
+from logic.card import Card
 from settings import *
 
 from logic.states.start_menu import handle_start_events, update_start, render_start
@@ -170,6 +171,8 @@ class App:
         self.start_menu_logo_rect = self.start_menu_logo_sprite.get_rect(midtop = (SCREEN_WIDTH//2, SCREEN_HEIGHT//6))
 
         #Deck editor
+        self.deck = [[], [], []] # Main, side, extra
+        self.current_interacted_card = None # The card that the user is currently interacting with
 
         self.card_search_sprite = pg.image.load("assets/card_search.png").convert_alpha()
         self.card_search_rect = self.card_search_sprite.get_rect(topright=(SCREEN_WIDTH, 5))
@@ -185,10 +188,6 @@ class App:
         self.extra_viewer_sprite = pg.image.load("assets/extra_viewer.png").convert_alpha()
         extra_bottomright = (self.card_search_rect.bottomleft[0] - 5, self.card_search_rect.bottomleft[1] + 5)
         self.extra_viewer_rect = self.extra_viewer_sprite.get_rect(bottomright=extra_bottomright)
-
-        self.current_cards_in_deck = [[], [], []] #Main, Extra, Side
-        self.current_deck_sprites = [[], [], []] #Main, Extra, Side
-        self.current_deck_rects = self.gen_deck_rects()
 
     def read_deck_from_ydk(self, ydk_path):
         """
@@ -215,40 +214,41 @@ class App:
                     if line == "#main": 
                         current_portion = 0
                         continue  # Skip to next iteration
-                    elif line == "#extra": 
+                    elif line == "!side": 
                         current_portion = 1
                         continue  # Skip to next iteration
-                    elif line == "!side": 
+                    elif line == "#extra": 
                         current_portion = 2
                         continue  # Skip to next iteration
                     elif line == "": continue  # Skip to next iteration if line is empty
 
                     if line.isdigit():  # If line only contains digits
                         try:
-                            self.current_cards_in_deck[current_portion].append(line) # Add the card ID to the current portion
-                            
+
                             if is_image_already_cached(dimensions='small', card_id=line):
-                                card_image = get_cached_image(dimensions='small', card_id=line)
-                                has_api_been_called = False # Set the flag to False because the image is already cached
+                                card_sprite = get_cached_image(dimensions='small', card_id=line)
                             else:
-                                card_image = get_small_card_image(card_id=line) # Get the small image of the card
-                                # The image is already cached in the get_small_card_image function
-                                has_api_been_called = True # Set the flag to True to avoid letting the program sleep if the image is already cached
-                            
-                            if current_portion == 0: # If the current portion is the main deck
+                                card_sprite = get_small_card_image(card_id=line)
+                                cache_image(card_sprite, dimensions='small', image_type='pygame surface', card_id=line)
+
+                            if current_portion == 0:
                                 if is_image_already_cached(dimensions='viewer normal', card_id=line):
-                                    card_image = get_cached_image(dimensions='viewer normal', card_id=line)
+                                    card_sprite = get_cached_image(dimensions='viewer normal', card_id=line)
+                                    has_api_been_called = False # Set the flag to False because the image is already cached
                                 else:
-                                    card_image = resize_card(card_image, new_dim_preset='viewer normal') # Resize the card image because the small images are still too large
-                                    cache_image(card_image, dimensions='viewer normal', image_type='pygame surface', card_id=line) # Cache the resized image 
-                            
+                                    card_sprite = resize_card(card_sprite, new_dim_preset='viewer normal')
+                                    # The image is already cached in the get_small_card_image function
+                                    has_api_been_called = True # Set the flag to True to avoid letting the program sleep if the image is already cached
                             else:
                                 if is_image_already_cached(dimensions='viewer small', card_id=line):
-                                    card_image = get_cached_image(dimensions='viewer small', card_id=line)
+                                    card_sprite = get_cached_image(dimensions='viewer small', card_id=line)
                                 else:
-                                    card_image = resize_card(card_image, new_dim_preset='viewer small')
-                            
-                            self.current_deck_sprites[current_portion].append(card_image)  # Add the card image to the current portion
+                                    card_sprite = resize_card(card_sprite, new_dim_preset='viewer small')
+                                    cache_image(card_sprite, dimensions='viewer small', image_type='pygame surface', card_id=line)
+
+
+                            self.deck[current_portion].append(Card(id=line, sprite=card_sprite, rect=None))
+
                         except Exception as e:
                             print(f"Unknown card ID: {line} with error: {e}")
                             raise
@@ -263,11 +263,10 @@ class App:
                         time.sleep(time_to_sleep)
 
         except FileNotFoundError:
-            print(f"File not found at: {ydk_path}")
+            raise FileNotFoundError(f"File not found at: {ydk_path}")
         except Exception as e:
-            print(f"An unexpected error occurred: {e}")
-            raise
-
+            raise ValueError(f"An unexpected error occurred: {e}")
+            
     def clear_cache(self):
         """
         Clear the cache of card images.
@@ -283,44 +282,40 @@ class App:
             for file in files:
                 os.remove(os.path.join(root, file))
 
-    def gen_deck_rects(self):
+    def bind_rects_to_cards(self):
         """
-        Generate the rects for the main, extra and side deck.
+        Binds rects to cards in the deck.
 
         Parameters:
         - None
 
         Returns:
-        - A list of rects for the main, extra and side deck.
+        - None
         """
-
-        rects = [[], [], []]
 
         #Main deck
         x, y = self.main_viewer_rect.topleft[0] + 58, self.main_viewer_rect.topleft[1] + 2
-        card_dims = (83, 118)
-        for i in range(60):
-            rects[0].append(pg.Rect((x, y), card_dims))
+        for i, card in enumerate(self.deck[0]):
+            card.rect = card.sprite.get_rect(topleft=(x, y))
+            card.original_rect = card.rect.copy() # Save the original rect for resetting
             x += 83 + 2 # 83 is the width of the card, 2 is the horizontal padding
             if i % 10 == 9:
                 x = self.main_viewer_rect.topleft[0] + 58
                 y += 118 + 2 # 118 is the height of the card, 3 is the vertical padding
-            
-        
+
         #Side deck
         x, y = self.side_viewer_rect.topleft[0] + 44, self.side_viewer_rect.topleft[1] + 22
-        card_dims = (55, 78)
-        for i in range(15):
-            rects[2].append(pg.Rect((x, y), card_dims))
-            x += 55 + 2 # 54 is the width of the card, 2 is the horizontal padding
+        for card in self.deck[1]:
+            card.rect = card.sprite.get_rect(topleft=(x, y))
+            card.original_rect = card.rect.copy() # Save the original rect for resetting
+            x += 55 + 2
 
         #Extra deck
         x, y = self.extra_viewer_rect.topleft[0] + 44, self.extra_viewer_rect.topleft[1] + 22
-        for i in range(15):
-            rects[1].append(pg.Rect((x, y), card_dims))
-            x += 55 + 2 # 54 is the width of the card, 2 is the horizontal padding
-
-        return rects
+        for card in self.deck[2]:
+            card.rect = card.sprite.get_rect(topleft=(x, y))
+            card.original_rect = card.rect.copy() # Save the original rect for resetting
+            x += 55 + 2 #55 is the width of the card, 2 is the horizontal padding
 
     def run(self):
         while True:
@@ -343,8 +338,8 @@ class App:
 
     def update(self):
         match self.state:
-            case State.START_MENU: update_start()
-            case State.DECK_EDITOR: update_deck_builder()
+            case State.START_MENU: update_start(self)
+            case State.DECK_EDITOR: update_deck_builder(self)
 
     def render(self):
         self.screen.fill((0, 0, 0))

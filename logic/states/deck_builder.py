@@ -4,23 +4,30 @@ rect_width = 350
 
 card_inspect_rect = pg.Rect((0, 0), (rect_width, 1000))
 
-rect_width = SCREEN_WIDTH - (rect_width * 2)
-
-
 def handle_deck_builder_events(game, event):
-    if event.type == pg.MOUSEBUTTONDOWN and event.button == 1:
+    if event.type == pg.MOUSEBUTTONDOWN and event.button == 1: # Picking up the card
         card_found = False
-        for deck_rects in game.current_deck_rects:
-            for rect in deck_rects:
-                if rect.collidepoint(event.pos):
-                    print("Card clicked")
-                    card_found = True
+        for deck_portion in game.deck:
+            for card in deck_portion:
+                if card.rect.collidepoint(event.pos):
+                    card_found = True # This is used to break out of the outer loop
+                    game.current_interacted_card = card
                     break
-                if card_found: break
+            if card_found: break
+    
+    elif event.type == pg.MOUSEMOTION: # Dragging the card
+        if game.current_interacted_card:
+            game.current_interacted_card.rect.move_ip(event.rel) # Move the card with the relative movement of the mouse 
+
+    elif event.type == pg.MOUSEBUTTONUP:
+        if event.button == 1 and game.current_interacted_card != None: # Dropping the card
+            game.current_interacted_card.rect = game.current_interacted_card.original_rect
+            game.current_interacted_card = None
 
 
-def update_deck_builder():
+def update_deck_builder(game):
     pass
+    
 
 def render_deck_builder(game):
     screen = game.screen
@@ -39,6 +46,6 @@ def draw_deck(game):
     game.screen.blit(game.card_search_sprite, game.card_search_rect)
 
     # Draw the deck
-    for sprites, rects in zip(game.current_deck_sprites, game.current_deck_rects):
-        for sprite, rect in zip(sprites, rects):
-            game.screen.blit(sprite, rect)
+    for deck_portion in game.deck:
+        for card in deck_portion:
+            game.screen.blit(card.sprite, card.rect)
