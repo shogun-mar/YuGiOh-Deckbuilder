@@ -250,8 +250,8 @@ class App:
                             self.deck[current_portion].append(Card(id=line, sprite=card_sprite, rect=None))
 
                         except Exception as e:
-                            print(f"Unknown card ID: {line} with error: {e}")
-                            raise
+                            raise Exception(f"Unknown card ID: {line} with error: {e}")
+                            
                     else:
                         raise ValueError(f"Invalid line in ydk file: {line}")
                     

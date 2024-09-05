@@ -1,4 +1,7 @@
-assets/cached_cards/*
+assets/cached_cards/small/*
+assets/cached_cards/normal/*
+assets/cached_cards/viewer small/*
+assets/cached_cards/viewer normal/*
 __pycache__
 logic/__pycache__
 logic/states/__pycache__
