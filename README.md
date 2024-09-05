@@ -29,6 +29,6 @@ Deck editor:
 ![deck editor](https://github.com/user-attachments/assets/14fb0f93-e27c-401d-ae50-d3890a11d0e2)
 
 ## Assets credits
-Fonts: https://www.cardmaker.net/forums/topic/308603-fonts-for-yu-gi-oh-card-making-with-multilingual-support/ 
+Fonts: https://www.cardmaker.net/forums/topic/308603-fonts-for-yu-gi-oh-card-making-with-multilingual-support/  
 API: https://ygoprodeck.com/api-guide/  
 Deck editor panels taken from Dueling Book deck editor as placeholder art, will replace.
