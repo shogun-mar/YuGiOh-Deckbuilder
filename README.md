@@ -10,12 +10,25 @@ In the center of your screen you will find the three portions that make up a YuG
 
 Card inspector and searcher are still under development.
 
-## Requirements
+## Installation
 
+Run this command:
 ```
-pip3 install requests pygame
+pip install -r requirements.txt
 ```
+while in the directory folder.
+
+NOTE: Python 3+ required.
+
+## Example images  
+
+Start menu:  
+![start menu](https://github.com/user-attachments/assets/a5b25ccb-136a-446a-85e9-1ba31a4bc7c8)  
+
+Deck editor:  
+![deck editor](https://github.com/user-attachments/assets/14fb0f93-e27c-401d-ae50-d3890a11d0e2)
 
 ## Assets credits
 Fonts: https://www.cardmaker.net/forums/topic/308603-fonts-for-yu-gi-oh-card-making-with-multilingual-support/ 
 API: https://ygoprodeck.com/api-guide/ 
+Deck editor panels taken from Dueling Book deck editor as placeholder art, will replace.
